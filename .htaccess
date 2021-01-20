@@ -1,0 +1,30 @@
+AddType image/x-icon .ico
+AddDefaultCharset UTF-8
+
+<IfModule mod_rewrite.c>
+Options +FollowSymlinks
+Options -Indexes
+RewriteEngine on
+RewriteCond %{HTTP_HOST} ^www\.kdm-auto\.loc [NC]
+RewriteCond %{SERVER_PORT} 80 
+RewriteRule ^(.*)$ http://kdm-auto.loc/$1 [R,L]
+RewriteCond %{REQUEST_URI} \.(png|gif|ico|swf|jpe?g|js|css|ttf|svg|eot|woff|yml|xml|zip|txt|doc)$
+RewriteRule ^(.*) $1 [QSA,L]
+#RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f [OR]
+RewriteCond %{REQUEST_URI} \.(ini|php.*)$
+RewriteRule ^(.*) index.php [E=HTTP_AUTHORIZATION:%{HTTP:Authorization},L,QSA]
+</IfModule>
+
+<IfModule mod_php5.c> 
+php_flag magic_quotes_gpc Off
+</IfModule>
+# DO NOT REMOVE THIS LINE AND THE LINES BELOW SSL_REDIRECT:kdm-auto.loc
+RewriteEngine On
+RewriteCond %{SERVER_PORT} !^443$
+RewriteRule .* http://%{SERVER_NAME}%{REQUEST_URI} [R=301,L]
+#RewriteEngine on
+#RewriteCond %{HTTPS} off
+#RewriteCond %{HTTP_HOST} ^kdm-auto.loc$
+#RewriteRule (.*) http://%{HTTP_HOST}%{REQUEST_URI}
+# DO NOT REMOVE THIS LINE AND THE LINES ABOVE SSL_REDIRECT:kdm-auto.loc
