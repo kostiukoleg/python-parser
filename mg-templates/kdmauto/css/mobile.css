@@ -448,7 +448,9 @@
         display: none!important;
 
     }*/
-
+  div.buy-block-inner div.wishlist {
+    position: absolute;
+  }
   #mc_embed_signup_fb {
     display: none;
   }

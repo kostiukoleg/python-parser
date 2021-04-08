@@ -23,6 +23,11 @@ config.read("settings.ini")
 
 class Parser:
 
+    def __init__(self, category, category_url, model):
+        self.category = category
+        self.category_url = category_url
+        self.model = model
+
     def get_html(self, url: str) -> webdriver:
         try:
             driver = webdriver.Chrome(ChromeDriverManager().install())
@@ -95,7 +100,7 @@ class Parser:
         try: 
             with open(path, 'a', encoding="utf-8", newline='') as file:
                 writer = csv.writer(file, delimiter=';')
-                writer.writerow([' ', ' ', data['title'], ' ', data['description'], data['price'], ' ', data['images'], ' ', data['count'], data['activation'], data['title-seo'], ' ', ' ', ' ', data['recomended'], data['new'], ' ', ' ', ' ', ' ', ' ', data['currency'], data['properties']])
+                writer.writerow([data['category'], data['category_url'], data['title'], ' ', data['description'], data['price'], ' ', data['images'], data['article'], data['count'], data['activation'], data['title-seo'], ' ', ' ', ' ', data['recomended'], data['new'], ' ', ' ', ' ', ' ', ' ', data['currency'], data['properties']])
         except Exception as e:
             print('Can\'t write csv file. Reason %s' % e)
 
@@ -200,12 +205,13 @@ class Parser:
             alert = False
         return alert 
 
-    def get_car_data(self, driver: webdriver, i: int, model='Kia Motors') -> None:
+    def get_car_data(self, driver: webdriver, i: int) -> None:
         c = inspect.currentframe()  
         try:
             WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, '/html/body/div[1]/div[4]/div[2]/div[5]/table/tbody/tr[' + str(i) + ']/td[5]/p/a[@class="a_list"]'))).click()
         except Exception as e:
             print('Can\'t click on car %d. Reason %s' % (i, e))
+            driver.refresh()
         if self.alert_present(driver):
             return False 
         tabs = driver.window_handles
@@ -215,16 +221,19 @@ class Parser:
             print('Can\'t switch to new window. Reason %s' % e)
         self.download_images(self.get_img(driver))
         car: Dict[str] = {}
-        car['categoty'] = model
+        car['category'] = self.category
+        car['category_url'] = self.category_url
         try:
             car['title'] = self.ko_translate(driver.find_element_by_xpath('/html/body/div[1]/div[1]/h2').text, "en")
             car['title-seo'] = self.ko_translate(driver.find_element_by_xpath('/html/body/div[1]/div[1]/h2').text, "en")
         except:
             car['title'] = ''
+            driver.refresh()
         try:
             car['price'] = int(driver.find_element_by_xpath('/html/body/div[1]/div[2]/div[2]/p/strong/em').text.replace(',', ''))*9.10
         except: 
             car['price'] = '' 
+            driver.refresh()
         try:
             car['description'] = '<div class="paper-tit"><font style="vertical-align: inherit;"><font style="vertical-align: inherit;">Протокол осмотра / осмотра автомобилей, выставленных на аукцион</font></font></div>'
             el = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > div > div > table')))
@@ -242,6 +251,7 @@ class Parser:
             car['description'] += ''
             print(c.f_lineno) 
             print('Can\'t get protocol view. Reason %s' % e)
+            driver.refresh()
         try:
             car['description'] += '<h2 class="page-subtit mt60"><font style="vertical-align: inherit"><font style="vertical-align: inherit">Детали автомобиля</font></font></h2>'
             el = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div.vehicle-detail-view > div.vehicle-detail > div.vehicle-detail_bar > table.tbl-v02')))
@@ -249,7 +259,8 @@ class Parser:
         except Exception as e:
             car['description'] += ''
             print(c.f_lineno) 
-            print('Can\'t get car details. Reason %s' % e)    
+            print('Can\'t get car details. Reason %s' % e)  
+            driver.refresh()  
         try:
             car['description'] += '<h2 class="page-subtit mt60" id="view-status"><font style="vertical-align: inherit"><font style="vertical-align: inherit">Состояние кузова автомобиля</font></font></h2>'
             el = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div.vehicle-detail-view > div.tab-status')))
@@ -257,7 +268,8 @@ class Parser:
         except Exception as e:
             car['description'] += ''
             print(c.f_lineno) 
-            print('Can\'t get car condition. Reason %s' % e)       
+            print('Can\'t get car condition. Reason %s' % e)    
+            driver.refresh()   
         try:
             car['description'] += '<h2 class="page-subtit mt60"><font style="vertical-align: inherit;"><font style="vertical-align: inherit;">Видео автомобиля</font></font></h2>'
             el = WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.CSS_SELECTOR, 'body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div.vehicle-detail-view > div:nth-child(5)')))
@@ -266,40 +278,65 @@ class Parser:
             car['description'] += ''
             print(c.f_lineno) 
             print('Can\'t get car control list. Reason %s' % e) 
+            driver.refresh()
         try:
             year = int(driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > div > div > table > tbody > tr:nth-child(5) > td:nth-child(4)').text)
         except Exception as e:
             print('Can\'t get car year. Reason %s' % e)
+            driver.refresh()
         try:
             mark = self.ko_translate(driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > div > div > table > tbody > tr:nth-child(4) > td:nth-child(5)').text, "en")
         except Exception as e:
             print('Can\'t get car mark. Reason %s' % e)
+            driver.refresh()
         try:
             color = self.ko_translate(driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(3) > td:nth-child(4)').text, "ru")
         except Exception as e:
             print('Can\'t get car color. Reason %s' % e)
+            driver.refresh()
         try:
-            fuel = self.ko_translate(driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(4) > td:nth-child(4)').text, "ru")
+            fulel_data = {
+                "가솔린":"Бензин",
+                "디젤":"Дизель",
+                "LPG":"LPG",
+                "LPI하이브리드":"LPG гибрид",
+                "가솔린하이브리드":"Бензиновый гибрид",
+                "디젤하이브리드": "Дизельный гибрид",
+                "전기":"Электрокар",
+                "가솔린/LPG":"Бензин/LPG"
+            }
+            fuel = fulel_data[driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(4) > td:nth-child(4)').text]
         except Exception as e:
+            fuel = "Дизель"
             print('Can\'t get car fuel. Reason %s' % e)
+            driver.refresh()
         try:
             res = re.findall("\d+", driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(5) > td:nth-child(4)').text)
             displacement = int(''.join(res))
         except Exception as e:
-            print('Can\'t get car displacement. Reason %s' % e)     
+            print('Can\'t get car displacement. Reason %s' % e)  
+            driver.refresh()   
         try:
-            transmission = self.ko_translate(driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(2) > td:nth-child(4)').text, "ru")
+            transmission = driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(2) > td:nth-child(4)').text == "자동" if "Автомат" else "Механика"
         except Exception as e:
             print('Can\'t get car transmission. Reason %s' % e)   
+            driver.refresh()
         try:
             car_type = self.ko_translate(driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(6) > td:nth-child(2)').text, "ru")
         except Exception as e:
             print('Can\'t get car type. Reason %s' % e) 
+            driver.refresh()
+        try:
+            lot_number = self.ko_translate(driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-tit > p > strong').text, "ru")
+        except Exception as e:
+            print('Can\'t get car type. Reason %s' % e) 
+            driver.refresh()
         try:
             r = re.findall("\d+", driver.find_element_by_css_selector('body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(1) > td:nth-child(4)').text)
             distance_driven = int(''.join(r))
         except Exception as e:
-            print('Can\'t get car distance driven. Reason %s' % e) 
+            print('Can\'t get car distance driven. Reason %s' % e)
+            driver.refresh() 
         car['images'] = self.get_img_str(driver)
         car['count'] = '0'
         car['activation'] = '1'
@@ -307,7 +344,8 @@ class Parser:
         car['recomended'] = '0'
         car['new'] = '0'
         car['weight'] = '0'
-        car['properties'] = ('Цвет=[type=assortment value=%s#0# product_margin=Желтый|Белый|Серебро|Красный|Фиолетовый|Оранжевый|Зеленый|Серый|Золото|Коричневый|Голубой|Черный|Бежевый]&Кузов=[type=assortment value=%s#0# product_margin=Универсал|Фургон|Фура|Трактор|Седан|Родстер|Пикап|Мотоцикл|Минивен|Хэтчбек|Кроссовер|Купе|Кабриолет|Багги]&Пробег=%d&Двигатель=%d&Год=%d&Трансмиссия=[type=assortmentCheckBox value=%s product_margin=Механика|Автомат]&Топливо=[type=assortmentCheckBox value=%s product_margin=Дизель|Бензин|Газ]&Модель=%s&Марка=%s' % (color, car_type, distance_driven, displacement, year, transmission, fuel, model, mark))
+        car['article'] = lot_number
+        car['properties'] = ('Цвет=[type=assortmentCheckBox value=%s product_margin=Желтый|Белый|Серебро|Красный|Фиолетовый|Оранжевый|Зеленый|Серый|Золото|Коричневый|Голубой|Черный|Бежевый]&Кузов=[type=assortmentCheckBox value=%s product_margin=Универсал|Фургон|Фура|Трактор|Седан|Родстер|Пикап|Мотоцикл|Минивен|Хэтчбек|Кроссовер|Купе|Кабриолет|Багги]&Пробег=%d&Двигатель=%d&Год=%d&Трансмиссия=[type=assortmentCheckBox value=%s product_margin=Механика|Автомат]&Топливо=[type=assortmentCheckBox value=%s product_margin=Дизель|Бензин|Газ]&Модель=%s&Марка=%s&Номер лота=%s&Аукцион=lotteautoauction' % (color, car_type, distance_driven, displacement, year, transmission, fuel, mark, self.category, lot_number))
         try:
             driver.close()
             driver.switch_to.window(tabs[0])
@@ -325,7 +363,7 @@ class Parser:
             for nav in range(fnav, snav):
                 driver.execute_script("fnSearch("+ str(nav) +");return false; ")
                 WebDriverWait(driver, 5).until(EC.visibility_of_element_located((By.XPATH, '/html/body/div[1]/div[4]/div[2]/div[5]/table/tbody/tr')))
-                print("Page "+str(nav-1))
+                print("Page "+str(nav))
                 print("Cars len "+str(len(driver.find_elements_by_xpath('/html/body/div[1]/div[4]/div[2]/div[5]/table/tbody/tr'))))
                 self.get_car(driver)
             driver.close()
@@ -340,10 +378,10 @@ class Parser:
             res = ''
         return res
 
-    def manufactured(self, driver, text):
+    def manufactured(self, driver):
         try:
             driver.implicitly_wait(10)
-            el = driver.find_element_by_link_text(str(text))
+            el = driver.find_element_by_link_text(str(self.model))
             el.click()
             driver.execute_script("fnSearch(1);")
         except Exception as e:
@@ -358,10 +396,12 @@ class Parser:
         except Exception as e:
             print('Can\'t click to login button. Reason %s' % e)
         try:
+            time.sleep(3)
             driver.find_element_by_id("userId").send_keys("152000")
         except Exception as e:
             print('Can\'t put login in input. Reason %s' % e)
         try:
+            time.sleep(3)
             driver.find_element_by_id("userPwd").send_keys("4275")
         except Exception as e:
             print('Can\'t put password in input. Reason %s' % e)
