@@ -13,7 +13,7 @@ import csv
 import html
 import fake_useragent
 
-DATE = "07/04/2021"
+DATE = "14/04/2021"
 USD = "1110"
 PARSE_CODE = 1
 MAX_PAGE = 74
@@ -293,9 +293,14 @@ def get_all_links(car_link, file_name="car_id.txt"):
 def get_car_year(html):
     if(html != ''):
         try:
-            res = re.match("[0-9]+", rm_new_line(str(html.find("strong.text-right")[2].text)))
-            if(res):
-                return int(res.group())
+            if(len(html.find("strong.text-right"))>2):
+                res = re.search("[0-9]+", str(html.find("strong.text-right")[2].text))
+                if(res):
+                    year = res.group()
+                    if(len(year) == 4):
+                        return int(year)
+                    else:
+                        return int(year[0:4])
         except Exception as e:
             print('Can\'t get car year. Reason %s.' % e)
             return ""
@@ -305,8 +310,11 @@ def get_car_registration(html):
         try:
             if(len(html.find("strong.text-right"))>2):
                 res = re.findall("[0-9]+", rm_new_line(str(html.find("strong.text-right")[2].text)))
+                print(res)
                 if(len(res)>1):
                     return str(res[1][0:4]+"/"+res[1][4:6]+"/"+res[1][6:8])
+                elif(len(res) == 1):
+                    return str(res[0][0:4]+"/"+res[0][4:6]+"/"+res[0][6:8])
         except Exception as e:
             print('Can\'t get car registration. Reason %s.' % e)
             return ""
@@ -350,7 +358,9 @@ def get_car_category(html):
                 "Audi":"Audi",
                 "Citroen":"Citroen",
                 "Honda":"Honda",
-                "Daechang":"Daechang Motors"
+                "Daechang":"Daechang Motors",
+                "Chrysler":"Chrysler",
+                "Porsche":"Porsche"
             }
         try:
             data = re.match("^[0-9]+\s(\w+)", get_car_title(html))
@@ -548,7 +558,9 @@ def get_car_category_url(html):
                 "Tesla":"tesla",
                 "Audi":"audi",
                 "Citroen":"citroen",
-                "Daechang Motors":"daechang-motors"
+                "Daechang Motors":"daechang-motors",
+                "Chrysler":"chrysler",
+                "Porsche":"porsche"
             }
         try:
             return categoty_url_data[get_car_category(html)]
@@ -666,8 +678,8 @@ def get_car(link):
     # p = current_process()
     # if(p.name != 'MainProcess' and p._identity[0] and os.getpid()):
     #     print('process counter:', p._identity[0], 'pid:', os.getpid())
-    unf = uniform(1,4)
-    time.sleep(unf)
+    # unf = uniform(1,4)
+    # time.sleep(unf)
     html = fetch(link)
     print(link)
     car = {}
@@ -716,6 +728,7 @@ def main():
         my_list = get_all_links(car_link)
         with Pool(15) as p:
             p.map(get_car, my_list) 
+
     time_end = time.time() 
     print(time_end - time_start)
 

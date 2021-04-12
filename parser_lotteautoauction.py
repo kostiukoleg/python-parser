@@ -430,29 +430,54 @@ def get_car_description(html):
         except Exception as e:
             print('Can\'t get car description image. Reason %s.' % e)
     return description
+
 #категория для авто
-# def get_car_category(html):
-#     try:
-#         categoty_data = {
-#             "Genesis":"Genesis",
-#             "Kia":"Kia Motors",
-#             "Hyundai":"Hyundai",
-#             "Ssangyong":"SsangYong",
-#             "Renault":"Renault",
-#             "Benz":"Mercedes Benz",
-#             "Chevrolet":"Chevrolet",
-#             "Jaguar":"Jaguar",
-#             "BMW":"BMW",
-#             "Land":"Land Rover",
-#             "Peugeot":"Peugeot",
-#             "Volkswagen":"Volkswagen",
-#             "Ford":"Ford",
-#             "Audi":"Audi",
-#         }
-#         return categoty_data[re.match("(^\w*)", get_car_title(html)).group(0)]
-#     except Exception as e:
-#         print('Can\'t get car category. Reason %s.' % e)
-#         return ""
+def get_car_category(html):
+    try:
+        categoty_data = {
+            "Genesis":"Genesis",
+            "Kia":"Kia Motors",
+            "Hyundai":"Hyundai",
+            "Ssangyong":"SsangYong",
+            "Renault":"Renault",
+            "Benz":"Mercedes Benz",
+            "Chevrolet":"Chevrolet",
+            "Jaguar":"Jaguar",
+            "BMW":"BMW",
+            "Land":"Land Rover",
+            "Peugeot":"Peugeot",
+            "Volkswagen":"Volkswagen",
+            "Ford":"Ford",
+            "Nissan":"Nissan",
+            "Jeep":"Jeep",
+            "Lexus":"Lexus",
+            "Lincoln":"Lincoln",
+            "Mini":"Mini Cooper",
+            "Cadillac":"Cadillac",
+            "Toyota":"Toyota",
+            "Tesla":"Tesla",
+            "AUDI":"Audi",
+            "BENTLEY":"Bentley"
+        }
+        res = re.match("^[0-9]+\s(\w+)", get_car_title(html))
+        if(res):
+            res = res.group(1)
+            if(res):
+                return categoty_data[res]
+    except Exception as e:
+            print('Can\'t get car category. Reason %s.' % e)
+
+#год первой регистрации автомобиля
+def get_car_registration(html):
+    if(html != ''):
+        soup = BeautifulSoup(html, 'html.parser')
+        try:
+            if(len(soup.select("div.vehicle-detail div.vehicle-detail-view div.vehicle-detail_bar table.tbl-v02 tr:nth-child(2) td"))>2):
+                registration = soup.select("div.vehicle-detail div.vehicle-detail-view div.vehicle-detail_bar table.tbl-v02 tr:nth-child(2) td")[2].text.strip()
+                return re.sub("\.","/",registration)
+        except Exception as e:
+            print('Can\'t get car registration. Reason %s.' % e)
+            return ""
 def get_car_category_url(html):
     try:
         categoty_url_data = {
@@ -473,7 +498,7 @@ def get_car_category_url(html):
             "Bentley":"bentley",
             "Cadillac":"cadillac"
         }
-        return categoty_url_data[config['LOTTE']['CATEGORY']]
+        return categoty_url_data[get_car_category(html)]
     except Exception as e:
         print('Can\'t get car category url. Reason %s.' % e)
         return ""
@@ -634,7 +659,7 @@ def get_car(link):
     # p = current_process()
     # if(p.name != 'MainProcess'):
     #     print('process counter:', p._identity[0], 'pid:', os.getpid())
-    time.sleep(uniform(3,8))
+    time.sleep(uniform(1,6))
     html = get_shtml(link)
     try:
         if(isinstance(html, int)):
@@ -653,8 +678,9 @@ def get_car(link):
             lot_number = get_lot_id(html)
             car_vin = get_car_vin(html)
             car_estimate = get_car_estimate(html)
-            category = config['LOTTE']['CATEGORY']
+            category = get_car_category(html)
             mark = category + " " + get_car_mark(html).upper()
+            registration = get_car_registration(html)
             car['category'] = category
             car['category_url'] = get_car_category_url(html)
             car['title'] = get_car_title(html)
@@ -668,7 +694,7 @@ def get_car(link):
             car['recomended'] = '0'
             car['new'] = '0'
             car['article'] = lot_number
-            car['properties'] = 'Цвет=[type=assortmentCheckBox value=%s product_margin=Желтый|Белый|Серебро|Красный|Фиолетовый|Оранжевый|Зеленый|Серый|Золото|Коричневый|Голубой|Черный|Бежевый]&Кузов=[type=assortmentCheckBox value=%s product_margin=Универсал|Фургон|Фура|Трактор|Седан|Родстер|Пикап|Мотоцикл|Минивен|Хэтчбек|Кроссовер|Купе|Кабриолет|Багги]&Пробег=%s&Двигатель=%s&Год=%s&Трансмиссия=[type=assortmentCheckBox value=%s product_margin=Механика|Автомат]&Топливо=[type=assortmentCheckBox value=%s product_margin=Дизель|Бензин|Газ]&Модель=%s&Марка=%s&Номер лота=%s&Оценка автомобиля=%s&VIN номер=%s&Аукцион=lotteautoauction %s' % (color, car_type, distance_driven, displacement, year, transmission, fuel, mark, category, lot_number, car_estimate, car_vin, config['LOTTE']['AUCTIONDATE'])
+            car['properties'] = 'Цвет=[type=assortmentCheckBox value=%s product_margin=Желтый|Белый|Серебро|Красный|Фиолетовый|Оранжевый|Зеленый|Серый|Золото|Коричневый|Голубой|Черный|Бежевый]&Кузов=[type=assortmentCheckBox value=%s product_margin=Универсал|Фургон|Фура|Трактор|Седан|Родстер|Пикап|Мотоцикл|Минивен|Хэтчбек|Кроссовер|Купе|Кабриолет|Багги]&Пробег=%s&Двигатель=%s&Год=%s&Дата первой регистрации авто=%s&Трансмиссия=[type=assortmentCheckBox value=%s product_margin=Механика|Автомат]&Топливо=[type=assortmentCheckBox value=%s product_margin=Дизель|Бензин|Газ]&Модель=%s&Марка=%s&Номер лота=%s&Оценка автомобиля=%s&VIN номер=%s&Аукцион=lotteautoauction %s' % (color, car_type, distance_driven, displacement, year, registration, transmission, fuel, mark, category, lot_number, car_estimate, car_vin, config['LOTTE']['AUCTIONDATE'])
             #download_images(get_img_src(html))
             return write_csv(car)
     except Exception as e:
@@ -687,37 +713,40 @@ def get_car(link):
 
 def main():
     time_start = time.time()
-    print(fetch('https://www.lotteautoauction.net/hp/auct/cmm/viewLoginUsr.do?loginMode=redirect'))
+    #print(fetch('https://www.lotteautoauction.net/hp/auct/cmm/viewLoginUsr.do?loginMode=redirect'))
     if(config['LOTTE']['AUTOCODE'] == '0'):
         rm_csv("car_id2.txt")
         create_txt("car_id2.txt")
-        if(config['LOTTE']['CATEGORY'] == "Renault"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=SS&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'SS')
-        elif(config['LOTTE']['CATEGORY'] == "Kia Motors"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=KI&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'KI')
-        elif(config['LOTTE']['CATEGORY'] == "Hyundai"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=HD&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'HD')
-        elif(config['LOTTE']['CATEGORY'] == "BMW"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=BM&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'BM')
-        elif(config['LOTTE']['CATEGORY'] == "Audi"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=AD&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'AD')
-        elif(config['LOTTE']['CATEGORY'] == "Chevrolet"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=DW&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'DW')
-        elif(config['LOTTE']['CATEGORY'] == "SsangYong"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=SY&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'SY')
-        elif(config['LOTTE']['CATEGORY'] == "Bentley"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=BE&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'BE')
-        elif(config['LOTTE']['CATEGORY'] == "Cadillac"):
-            s_page = parse(config['LOTTE']['URL']+"?set_search_maker=CA&searchPageUnit=20&pageIndex=1", get_max_page)
-            get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'CA')
+        categories = [config['LOTTE']['CATEGORY']] if not len(config['LOTTE']['CATEGORIES'].split(","))>1 else config['LOTTE']['CATEGORIES'].split(",")
+        for category in categories:
+            print(category)
+            if(category == "Renault"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=SS&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'SS')
+            elif(category == "Kia Motors"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=KI&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'KI')
+            elif(category == "Hyundai"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=HD&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'HD')
+            elif(category == "BMW"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=BM&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'BM')
+            elif(category == "Audi"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=AD&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'AD')
+            elif(category == "Chevrolet"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=DW&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'DW')
+            elif(category == "SsangYong"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=SY&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'SY')
+            elif(category == "Bentley"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=BE&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'BE')
+            elif(category == "Cadillac"):
+                s_page = parse(config['LOTTE']['URL']+"?set_search_maker=CA&searchPageUnit=20&pageIndex=1", get_max_page)
+                get_pages(int(config['LOTTE']['FPAGE']), s_page, 20, 'CA')
     elif(config['LOTTE']['AUTOCODE'] == '1'):
         rm_csv()
         create_csv()
@@ -736,6 +765,7 @@ def main():
             result = cursor.fetchall()
             for row in result:
                 print(row[0])
+
     time_end = time.time() 
     print(time_end - time_start)
 if __name__ == '__main__':
