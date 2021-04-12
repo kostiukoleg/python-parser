@@ -43,13 +43,13 @@ user = fake_useragent.UserAgent().random
 #включаємо сесію
 session = requests.Session()
 
-headers = {'Authorization':'Basic MTUyMDAwOjQyNzU=', 'user-agent': user, 'accept': '*/*'}
+#headers = {'Authorization':'Basic MTUyMDAwOjQyNzU=', 'user-agent': user, 'accept': '*/*'}
 #set cookies
-cookie = '_xm_webid_1_={}; hpAuctSaveid=152000; JSESSIONID={}'.format(config['LOTTE']['WEB_ID'], config['LOTTE']['SESSION_ID'])
-session.headers.update({'Authorization':'Basic MTUyMDAwOjQyNzU=', 'user-agent': user, 'Cookie': cookie}) 
+#cookie = '_xm_webid_1_={}; hpAuctSaveid=152000; JSESSIONID={}'.format(config['LOTTE']['WEB_ID'], config['LOTTE']['SESSION_ID'])
+#session.headers.update({'Authorization':'Basic MTUyMDAwOjQyNzU=', 'user-agent': user, 'Cookie': cookie}) 
 #parsing from proxy
-proxy = { 'http': 'http://' + choice(read_file("proxies.txt","\n")) }
-session.proxies.update(proxy)    
+#proxy = { 'http': 'http://' + choice(read_file("proxies.txt","\n")) }
+#session.proxies.update(proxy)    
 
 #translate function 
 def ko_translate(text, lan):
@@ -180,13 +180,41 @@ def get_html(url, useragent=None, proxy=None):
         print('Can\'t get HTML. Reason %s.' % e)
 #залогінюємось на сайті
 def login(login_link):
-    try:
-        session.headers.update({'Authorization':'Basic MTUyMDAwOjQyNzU=', 'user-agent': user, 'Accept': '*/*', 'Host': 'www.lotteautoauction.net', 'Content-Length': '0', 'Connection': 'keep-alive'})
-        session.post(login_link)
-        session_cookies = session.cookies
-        return session_cookies.get_dict()
-    except Exception as e:
-        print('Can\'t get HTML form %s. Reason %s.' % (login_link, e))
+        try:
+            session.headers.update({
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+                'Accept-Encoding':'gzip, deflate, br',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'max-age=0',
+                'Connection': 'keep-alive',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'DNT': '1',
+                'Upgrade-Insecure-Requests': '1',
+                'Host':'www.lotteautoauction.net',
+                'Origin': 'https://www.lotteautoauction.net',
+                'Pragma': 'no-cache',
+                'Referer': 'https://www.lotteautoauction.net/hp/auct/cmm/viewLoginUsr.do?loginMode=redirect',
+                'Sec-Fetch-Site': 'same-origin',
+                'Sec-Fetch-User': '?1',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Dest': 'document',
+                'User-Agent': user
+                })
+            login_data = {
+                "userId": "152000",
+                "userPwd": "4275",
+                "resultCd": "",
+                "checkId": "on"
+            }
+            r = session.request('POST', login_link, login_data, allow_redirects=False)
+            if(r.status_code == 200):
+                return r.html
+            else:
+                return r.status_code
+            # session_cookies = session.cookies
+            # return session_cookies.get_dict()
+        except Exception as e:
+            print('Can\'t get HTML form %s. Reason %s.' % (login_link, e))
 #витягуємо максимальне число сторінок
 def get_max_page(html, pages=20):
     soup = BeautifulSoup(html, 'html.parser')
@@ -526,7 +554,7 @@ def get_missed_car_id(html):
         print('Can\'t get car id. Reason %s.' % e)
 #парсимо сайт із сесії
 def parse(link, func):
-    #login(config['LOTTE']['LOGIN_LINK'])
+    login(config['LOTTE']['LOGIN_LINK'])
     try:
         html = session.get(link)
         if html.status_code == 200:

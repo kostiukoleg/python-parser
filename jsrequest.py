@@ -12,11 +12,11 @@ import os
 import csv
 import html
 import fake_useragent
+import configparser
 
-DATE = "14/04/2021"
-USD = "1110"
-PARSE_CODE = 1
-MAX_PAGE = 74
+config = configparser.ConfigParser(allow_no_value=True)
+config.read("settings.ini") 
+
 #read file function 
 def read_file(file_name, delimiter):
     try:
@@ -573,7 +573,7 @@ def get_car_price(html):
         try:
             if(len(html.find("strong.i_comm_main_txt2"))):
                 price = int(re.sub("\,", "", html.find("strong.i_comm_main_txt2")[0].text))
-                return int(price*10000/int(USD))
+                return int(price*10000/int(config['SELLCAR']['USD']))
         except Exception as e:
             print('Can\'t get car price. Reason %s.' % e)
             return ""
@@ -710,7 +710,7 @@ def get_car(link):
     car['recomended'] = '0'
     car['new'] = '0'
     car['article'] = get_lot_id(html)
-    car['properties'] = 'Цвет=[type=assortmentCheckBox value=%s product_margin=Желтый|Белый|Серебро|Красный|Фиолетовый|Оранжевый|Зеленый|Серый|Золото|Коричневый|Голубой|Черный|Бежевый]&Кузов=[type=assortmentCheckBox value=%s product_margin=Универсал|Фургон|Фура|Трактор|Седан|Родстер|Пикап|Мотоцикл|Минивен|Хэтчбек|Кроссовер|Купе|Кабриолет|Багги]&Пробег=%s&Двигатель=%s&Год=%s&Дата первой регистрации авто=%s&Трансмиссия=[type=assortmentCheckBox value=%s product_margin=Механика|Автомат]&Топливо=[type=assortmentCheckBox value=%s product_margin=Дизель|Бензин|Газ]&Модель=%s&Марка=%s&Номер лота=%s&Оценка автомобиля=%s&VIN номер=%s&Аукцион=sellcarauction %s' % (color, car_type, distance_driven, displacement, year, car_registration, transmission, fuel, mark, category, lot_number, car_estimate, car_vin, DATE)
+    car['properties'] = 'Цвет=[type=assortmentCheckBox value=%s product_margin=Желтый|Белый|Серебро|Красный|Фиолетовый|Оранжевый|Зеленый|Серый|Золото|Коричневый|Голубой|Черный|Бежевый]&Кузов=[type=assortmentCheckBox value=%s product_margin=Универсал|Фургон|Фура|Трактор|Седан|Родстер|Пикап|Мотоцикл|Минивен|Хэтчбек|Кроссовер|Купе|Кабриолет|Багги]&Пробег=%s&Двигатель=%s&Год=%s&Дата первой регистрации авто=%s&Трансмиссия=[type=assortmentCheckBox value=%s product_margin=Механика|Автомат]&Топливо=[type=assortmentCheckBox value=%s product_margin=Дизель|Бензин|Газ]&Модель=%s&Марка=%s&Номер лота=%s&Оценка автомобиля=%s&VIN номер=%s&Аукцион=sellcarauction %s' % (color, car_type, distance_driven, displacement, year, car_registration, transmission, fuel, mark, category, lot_number, car_estimate, car_vin, config['SELLCAR']['DATE'])
     #download_images(get_img_src(html))
     write_csv(car)
 
@@ -718,15 +718,11 @@ def get_car(link):
 def main():
     time_start = time.time()
 
-    if(PARSE_CODE == 0):
-            rm_csv("car_id.txt")
-            get_pages(1,MAX_PAGE)
-    else:
-        rm_csv()
-        create_csv()
-        my_list = get_all_links(car_link)
-        with Pool(15) as p:
-            p.map(get_car, my_list) 
+    rm_csv()
+    create_csv()
+    my_list = get_all_links(car_link)
+    with Pool(15) as p:
+        p.map(get_car, my_list) 
 
     time_end = time.time() 
     print(time_end - time_start)
