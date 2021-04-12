@@ -310,7 +310,6 @@ def get_car_registration(html):
         try:
             if(len(html.find("strong.text-right"))>2):
                 res = re.findall("[0-9]+", rm_new_line(str(html.find("strong.text-right")[2].text)))
-                print(res)
                 if(len(res)>1):
                     return str(res[1][0:4]+"/"+res[1][4:6]+"/"+res[1][6:8])
                 elif(len(res) == 1):
