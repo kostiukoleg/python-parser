@@ -11,16 +11,27 @@ $(document).ready(function(){
   } catch (error) {
     console.log(error);
   }
+
   try {
-    console.log($("div.product-tabs-container div#tab1 table.tbl-v02").eq(2));
     $("div.product-tabs-container div#tab1 table.tbl-v02").eq(2).html('<table class="tbl-v02"><colgroup><col style="width: 140px;"><col style="width: auto;"></colgroup><tbody><tr><th> Аббревиатура </th><td><p class="abbr"><span class="abbr-x"> Замена </span><span class="abbr-e"> Рекомендуется замена </span><span class="abbr-r"> Сколы/царапины </span><span class="abbr-w"> Ремонт </span><span class="abbr-m"> Съёмная деталь </span><span class="abbr-f"> Повреждения кузова </span></p></td></tr><tr style="display: none;"><th> Specials </th><td> Дефект сиденья, дефект материала внутренней части, дефект аварийной подушки, разгрузка двигателя, утечка моторного масла, шарнир двигателя, контрольная лампа двигателя, дефект миссии, дефект PS, дефект центровки, дефект глушителя, нижний шарнир, коррозия нижней части кузова </td></tr></tbody></table>');
   } catch (error) {
     console.log(error);
   }
+
   try {
     //Добавляем висоту прокрутки в localstorage
     if(window.location.href.search(/\/catalog/g) != -1){
-      
+      let pagination = document.getElementsByClassName("mg-pager");
+      pagination[0].addEventListener("click", function(e){
+        if(e.target.nodeName == "A"){
+          pagination[0].scrollIntoView();
+        }
+      });
+      pagination[1].addEventListener("click", function(e){
+        if(e.target.nodeName == "A"){
+          pagination[0].scrollIntoView();
+        }
+      });
       window.addEventListener("unload", function() {
         localStorage.scrolltop = window.pageYOffset;
       });
@@ -29,6 +40,7 @@ $(document).ready(function(){
   } catch (error) {
     console.log(error);
   }
+
   try {
     //Добавляем дату к аукциону
     lottedate = $("body > div.wrapper.catalog-page > div:nth-child(2) > div:nth-child(1) > div > div.side-menu > div.filter-block > form > div.mg-filter-body > div > div:nth-child(7) > ul > li:nth-child(1) > label").text().match(/\d{2}\/\d{2}\/\d{4}/g);
@@ -102,21 +114,109 @@ $(document).ready(function(){
 
   $("table").wrap("<div class='table-wrapper'/>");
 
-  var reg_phone = /[\+38]?\s?\(?0\d{2}\)?\s?\d{3}\-?\d{2}\-?\d{2}/g;
-
+  var reg_phone = /0\d{9}/g;
+  var reg_phone2 = /0{1}1{9}|0{1}2{9}|0{1}3{9}|0{1}4{9}|0{1}5{9}|0{1}6{9}|0{1}7{9}|0{1}8{9}|0{1}9{9}|0{9}/g;
   $("input[name='phone']").eq(1).focusout(function(){
     var val_phone = $("input[name='phone']").eq(1).val();
-    if(!val_phone.match(reg_phone)){
+    val_phone = val_phone.split(' ').join('').split('-').join('');
+    val_phone = val_phone.replace(/\(/g, "").replace(/\)/g, "").replace(/^\+?3?8/g, "");
+    if(!val_phone.match(reg_phone) || val_phone.match(reg_phone2) || val_phone == '' || val_phone.length != 10){
       alert("Введите правильный мобильный номер телефона");
+      $("input[name='send']").attr("disabled", true);
+      $("input[name='send']").css("background-color","#cccccc");
+    }else{
+      $("input[name='send']").removeAttr("disabled");
+      $("input[name='send']").css("background-color","#d50000");
     }
   });
+  //back ring
+  $("input[name='phone']").eq(0).focusout(function(){
+    var val_phone = $("input[name='phone']").eq(0).val();
+    val_phone = val_phone.split(' ').join('').split('-').join('');
+    val_phone = val_phone.replace(/\(/g, "").replace(/\)/g, "").replace(/^\+?3?8/, "");
+    if(!val_phone.match(reg_phone) || val_phone.match(reg_phone2) || val_phone == '' || val_phone.length != 10){
+      alert("Введите правильный мобильный номер телефона");
+      $("div.content-modal-back-ring a.send-ring-button").css("background","linear-gradient(to bottom,  #f92517 0%,#ae0101 100%)");
+      $("div.content-modal-back-ring a.send-ring-button").off('click');
+      $("div.content-modal-back-ring a.send-ring-button").css("color","#ffffff");
+    } else {
+      $("div.content-modal-back-ring a.send-ring-button").css("color","#3F454B");
+      $("div.content-modal-back-ring a.send-ring-button").css("background","linear-gradient(to bottom,  #feffff 0%,#f2efed 100%)");
+      $("div.content-modal-back-ring a.send-ring-button").click(function() {   
+        var name = $(this).parents('.content-modal-back-ring').find('input[name=name]');
+        var comment = $(this).parents('.content-modal-back-ring').find('textarea[name=comment]');
+        var phone = $(this).parents('.content-modal-back-ring').find('input[name=phone]');
+        var city_id = $(this).parents('.content-modal-back-ring').find('input[name=city_id]');
+        var mission = $(this).parents('.content-modal-back-ring').find('select[name=mission]');
+        var from = $(this).parents('.content-modal-back-ring').find('select[name=from]');
+        var to = $(this).parents('.content-modal-back-ring').find('select[name=to]');
+        var date_callback = $(this).parents('.content-modal-back-ring').find('input[name=date_callback]');
+        var captcha = $(this).parents('.content-modal-back-ring').find('input[name=capcha]');
+        var time_callback = 'с ' + from.val() + ' до ' + to.val();
+        if (from.parents('li').css('display') == 'none') {
+          time_callback = '';
+        }
 
+        if (phone.val() == "") {
+          $('.wrapper-modal-back-ring .error').remove();
+          $('.title-modal-back-ring').after('<div class="error">Необходимо заполнить поля формы</div>')
+          return false;
+        }
+
+        $('.send-ring-button').hide();
+        $('.send-ring-button').before("<span class='loading-send-ring'>Подождите, идет отправка заявки...</span>");
+
+        $.ajax({
+          type: "POST",
+          url: mgBaseDir + "/ajaxrequest",
+          dataType: 'json',
+          data: {
+            mguniqueurl: "action/sendOrderRing", // действия для выполнения на сервере
+            pluginHandler: 'back-ring',
+            name: name.val(),
+            comment: comment.val(),
+            phone: phone.val(),
+            city_id: city_id.val(),
+            mission: mission.val(),
+            date_callback: date_callback.val(),
+            time_callback: time_callback,
+            invisible: 1,
+            status_id: 1,
+            pub: 1,
+            capcha: captcha.val(),        
+          },
+          success: function(response) {
+            if (response.status != 'error') {
+              $('.content-modal-back-ring').text('Ваша заявка №' + response.data.row.id + ' принята. Наши менеджеры свяжутся с вами!');        
+              $('.send-ring-button').show();
+              $('.loading-send-ring').remove();
+              closeModal($('.wrapper-modal-back-ring'));
+            } else {
+              $('.wrapper-modal-back-ring .error').remove();
+              $('.title-modal-back-ring').after(response.data.msg);
+              $('.send-ring-button').show();
+              $('.loading-send-ring').remove();
+            }
+          }
+        });//END AJAX
+    });//END CLICK
+    }
+  });//END back ring
+
+  //FOOTER FORM
   $("input[name='phone2']").focusout(function(){
     var val_phone =  $("input[name='phone2']").val();
-    if(!val_phone.match(reg_phone)){
+    val_phone = val_phone.split(' ').join('').split('-').join('');
+    val_phone = val_phone.replace(/\(/g, "").replace(/\)/g, "").replace(/^\+?3?8/g, "");
+    if(!val_phone.match(reg_phone) || val_phone.match(reg_phone2) || val_phone == '' || val_phone.length != 10){
       alert("Введите правильный мобильный номер телефона");
+      $("input[name='send2']").attr("disabled", true);
+      $("input[name='send2']").css("background-color","#cccccc");
+    }else{
+      $("input[name='send2']").removeAttr("disabled");
+      $("input[name='send2']").css("background-color","#2196F3");
     }
-  });
+  });//END FOOTER FORM
 
   $(".products-wrapper .product-wrapper").each(function(){
       var variants = $(this).find(".block-variants");

@@ -206,9 +206,9 @@ def login(login_link):
                 "resultCd": "",
                 "checkId": "on"
             }
-            r = session.request('POST', login_link, login_data, allow_redirects=False)
+            r = session.request('POST', login_link, login_data)
             if(r.status_code == 200):
-                return r.html
+                return session
             else:
                 return r.status_code
             # session_cookies = session.cookies
@@ -228,19 +228,22 @@ def get_max_page(html, pages=20):
 #витягуємо html із сесію
 def get_shtml(link):
     try:
-        # res = re.findall("{'JSESSIONID': '([\d\w=.]+)', '_xm_webid_1_': '([\d]+)'}", str(login(login_link)))
-        # cookie = '_xm_webid_1_={}; _ga=GA1.2.2027634233.1611498833; _gid=GA1.2.1777522609.1612255912; hpAuctSaveid=152000; JSESSIONID={}; _gat_gtag_UA_118654321_1='.format(res[0][1], res[0][0]) 
-        html = session.get(link)
-        if html.status_code == 200:
-            return html.text
-        else: return html.status_code
+        session = login(config['LOTTE']['LOGIN_LINK'])
+        if(isinstance(session, int)):
+            print(session)
+        else:
+            html = session.get(link)
+            if html.status_code == 200:
+                session.close()
+                return html.text
+            else: return html.status_code
     except Exception as e:
         print('Can\'t get HTML with session. Reason %s.' % e)
 #пробег
 def get_distance_driven(html):
     soup = BeautifulSoup(html, 'html.parser')
     try:
-        res = re.findall("[0-9]+", str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(1) > td:nth-child(4)")).strip())
+        res = re.findall("[0-9]+", str(soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(1) > td:nth-child(4)")).strip())
         return int("".join(res))
     except Exception as e:
         print('Can\'t get driven distance. Reason %s.' % e)
@@ -358,14 +361,16 @@ def get_car_estimate(html):
         return ""
 #год автомобиля
 def get_car_year(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    try:
-        res = re.match("[0-9]+", str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(1) > td:nth-child(2)")[0].text.strip()))
-        if(res):
-            return int(res.group())
-    except Exception as e:
-        print('Can\'t get car year. Reason %s.' % e)
-        return ""
+    if(html != ''):
+        soup = BeautifulSoup(html, 'html.parser')
+        try:
+            if(len(soup.select("div.vehicle-detail > div.vehicle-detail-view > div.vehicle-detail > div.vehicle-detail_bar > table tr:nth-child(1) > td"))):
+                res = re.match("[0-9]+", str(soup.select("div.vehicle-detail > div.vehicle-detail-view > div.vehicle-detail > div.vehicle-detail_bar > table tr:nth-child(1) > td")[0].text.strip()))
+                if(res):
+                    return int(res.group())
+        except Exception as e:
+            print('Can\'t get car year. Reason %s.' % e)
+            return ""
 #цвет автомобиля
 def get_car_color(html):
     color_data = {
@@ -385,7 +390,7 @@ def get_car_color(html):
     }
     soup = BeautifulSoup(html, 'html.parser')
     try:
-        return color_data[re.sub("\s.+","", soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(3) > td:nth-child(4)")[0].text.strip())]
+        return color_data[re.sub("\s.+","", soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(3) > td:nth-child(4)")[0].text.strip())]
     except Exception as e:
         print('Can\'t get car color. Reason %s.' % e)
         return ""
@@ -410,7 +415,7 @@ def get_car_type(html):
     }
     soup = BeautifulSoup(html, 'html.parser')
     try:
-        return car_type_data[soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(6) > td:nth-child(2)")[0].text.strip()]
+        return car_type_data[soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(6) > td:nth-child(2)")[0].text.strip()]
     except Exception as e:
         print('Can\'t get car type. Reason %s.' % e)
         return ""
@@ -490,8 +495,10 @@ def get_car_category(html):
         res = re.match("^[0-9]+\s(\w+)", get_car_title(html))
         if(res):
             res = res.group(1)
-            if(res):
+            if(res and list(categoty_data.keys()).count(res)):
                 return categoty_data[res]
+            else:
+                return config['LOTTE']['CATEGORY']
     except Exception as e:
             print('Can\'t get car category. Reason %s.' % e)
 
@@ -681,7 +688,7 @@ def fetch(url):
     except Exception as e:
         print('Failed to close session %s. Reason: %s' % (url, e))
     return data
-krw_to_usd = get_currency()
+#krw_to_usd = get_currency()
 #витягуємо всі данні на авто
 def get_car(link):
     # p = current_process()
@@ -694,9 +701,9 @@ def get_car(link):
             print(html)
         else:
             car = {}
-            year = get_car_year(html)
-            if(year < 2012):
-                return
+            year = 0 if not isinstance(get_car_year(html), int) else get_car_year(html)
+            # if(year < 2012):
+            #     return
             color = get_car_color(html)
             car_type = get_car_type(html)
             distance_driven = get_distance_driven(html)
@@ -782,7 +789,7 @@ def main():
         # clear_folder('./py_img2/')
         my_list = get_all_links(config['LOTTE']['CAR_LINK'])
         # get_car(my_list[0])
-        with Pool(40) as p:
+        with Pool(1) as p:
             p.map(get_car, my_list) 
         if(config['LOTTE']['FTPCODE'] == '1'):
             ftp.quit()
