@@ -41,12 +41,12 @@ def ko_translate(text, lan):
             return GoogleTranslator(source='ko', target=lan).translate(text)
     except Exception as e:
         print('Failed to Translate text. Reason: %s' % e)
-        res = None
+        res = ""
         return res
 
 #следит чтоб небило длины текста более 5000 символов
 def text_len(text, lang):
-    new_text = None
+    new_text = ""
     if(isinstance(text,str) and len(text)>1):
         if(len(text)>5000):
             i = 0
@@ -110,8 +110,8 @@ def clear_car_name(car_name):
             print('Failed to clear car name. Reason: %s' % e)
 
 def fetch(url):
-    data = None
-    r = None
+    data = ""
+    r = ""
     # p = current_process()
     # if(p.name != 'MainProcess' and p._identity[0] and os.getpid()):
     #     print('process counter:', p._identity[0], 'pid:', os.getpid())
@@ -127,28 +127,25 @@ def fetch(url):
         r = asession.request('GET', url, allow_redirects=False)
     except Exception as e:
         print('Failed to get page %s. Reason: %s' % (url, e))
+        asession.close()
+        return data
     try:
-        if(r is not None and r.status_code == 200):
-            r.html.render(timeout=1500)
+        if(r.status_code == 200):
+            r.html.render(sleep = 2, timeout = 200)
             data = r.html
-        elif(r is not None):
-            print(r.status_code)
             asession.close()
-            return
+            return data
         else:
             asession.close()
-            return
+            return data
     except Exception as e:
         print('Failed to render page %s. Reason: %s' % (url, e))
-    try:
         asession.close()
-    except Exception as e:
-        print('Failed to close session %s. Reason: %s' % (url, e))
-    return data
+        return data
 
 def get_car_img(html):
-    data = None
-    if html is not None:
+    data = ""
+    if html:
         for i in range(len(html.find("#realImg>div"))):
             try:
                 html.find("#realImg>div")[i].attrs
@@ -263,7 +260,7 @@ def get_car_img(html):
 
 #запись айди авто в файл
 def write_car_id(file_name, data):
-    if html is not None:
+    if html:
         try:
             return open(file_name, "a").write(data)
         except Exception as e:
@@ -271,7 +268,7 @@ def write_car_id(file_name, data):
 
 #ID авто для парсингу
 def get_car_id(html):
-    if html is not None:
+    if html:
         try:
             items = html.find("div.car-title")
             print(html.find("div.car-title"))
@@ -300,7 +297,7 @@ def get_all_links(car_link, file_name="car_id.txt"):
 
 #год автомобиля
 def get_car_year(html):
-    if html is not None:
+    if html:
         try:
             if(len(html.find("strong.text-right"))>2):
                 res = re.search("[0-9]+", str(html.find("strong.text-right")[2].text))
@@ -312,10 +309,10 @@ def get_car_year(html):
                         return int(year[0:4])
         except Exception as e:
             print('Can\'t get car year. Reason %s.' % e)
-            return None
+            return ""
 #год первой регистрации автомобиля
 def get_car_registration(html):
-    if html is not None:
+    if html:
         try:
             if(len(html.find("strong.text-right"))>2):
                 res = re.findall("[0-9]+", rm_new_line(str(html.find("strong.text-right")[2].text)))
@@ -325,20 +322,20 @@ def get_car_registration(html):
                     return str(res[0][0:4]+"/"+res[0][4:6]+"/"+res[0][6:8])
         except Exception as e:
             print('Can\'t get car registration. Reason %s.' % e)
-            return None
+            return ""
 #название авто
 def get_car_title(html):
-    if html is not None:
+    if html:
         try:
             if(len(html.find("h2.tit_style2"))):
                 return clear_car_name(ko_translate(rm_new_line(str(html.find("h2.tit_style2")[0].text)), "en"))
         except Exception as e:
             print('Can\'t get title. Reason %s.' % e)
-            return None
+            return ""
 
 #категория авто
 def get_car_category(html):
-    if html is not None:
+    if html:
         categoty_data = {
                 "Genesis":"Genesis",
                 "Kia":"Kia Motors",
@@ -378,14 +375,14 @@ def get_car_category(html):
                 if(data.group(1) and categoty_data[data.group(1)]):
                     return categoty_data[data.group(1)]
                 else:
-                    return None
+                    return ""
         except Exception as e:
             print('Can\'t get car category. Reason %s.' % e)
-            return None
+            return ""
 
 #цвет автомобиля
 def get_car_color(html):
-    if html is not None:
+    if html:
         color_data = {
             "흰색":"Белый",
             "은색":"Серебро",
@@ -406,20 +403,20 @@ def get_car_color(html):
                 return color_data[re.sub("\s.+","", rm_new_line(str(html.find("strong.text-right")[9].text)))]
         except Exception as e:
             print('Can\'t get car color. Reason %s.' % e)
-            return None
+            return ""
 
 def get_car_estimate(html):
-    if html is not None:
+    if html:
         try:
             item = html.find("#body > section.con_top.gray-bg_fin > div:nth-child(2) > div > div > div > table > tbody > tr:nth-child(1) > td")[0].text
             if item:
-                return None.join(re.findall("[A-Z]", str(item)))
+                return "".join(re.findall("[A-Z]", str(item)))
         except Exception as e:
             print('Can\'t get car estimate %s. Reason: %s' % e)
 
 #тип автомобиля
 def get_car_type(html):
-    if html is not None:
+    if html:
         car_type_data = {
             "승합 (6인승)":"Универсал",
             "승용 (7인승)":"Универсал",
@@ -454,31 +451,31 @@ def get_car_type(html):
                 return car_type_data[rm_new_line(str(html.find("strong.text-right")[10].text))]
         except Exception as e:
             print('Can\'t get car type. Reason %s.' % e)
-            return None
+            return ""
 
 #пробег
 def get_distance_driven(html):
-    if html is not None:
+    if html:
         try:
             res = re.findall("[0-9]+", rm_new_line(str(html.find("strong.text-right")[5].text)))
-            return None.join(res)
+            return "".join(res)
         except Exception as e:
             print('Can\'t get driven distance. Reason %s.' % e)
-            return None
+            return ""
 
 #двигатель
 def get_car_displacement(html):
-    if html is not None:
+    if html:
         try:
             res = re.findall("[0-9]+", rm_new_line(html.find("strong.text-right")[6].text))
-            return None.join(res)
+            return "".join(res)
         except Exception as e:
             print('Can\'t get car displacement. Reason %s.' % e)
-            return None
+            return ""
 
 #коробка передач
 def get_transmission(html):
-    if html is not None:
+    if html:
         try:
             if(rm_new_line(str(html.find("strong.text-right")[8].text))=="오토"):
                 return "Автомат"
@@ -486,11 +483,11 @@ def get_transmission(html):
                 return "Механика"
         except Exception as e:
             print('Can\'t get transmission. Reason %s.' % e)
-            return None
+            return ""
 
 #топливо
 def get_fuel(html):
-    if html is not None:
+    if html:
         fulel_data = {
             "가솔린":"Бензин",
             "휘발유":"Бензин",
@@ -510,11 +507,11 @@ def get_fuel(html):
                 return fulel_data[rm_new_line(str(html.find("strong.text-right")[4].text))]
         except Exception as e:
             print('Can\'t get fuel. Reason %s.' % e)
-            return None
+            return ""
 
 #лот аукциона
 def get_lot_id(html):
-    if html is not None:
+    if html:
         try:
             if(len(html.find("h2.tit_style2"))):
                 res = re.search("\[{1}\d+\]{1}", ko_translate(rm_new_line(str(html.find("h2.tit_style2")[0].text)), "en"))
@@ -525,21 +522,21 @@ def get_lot_id(html):
                     return res
         except Exception as e:
             print('Can\'t get title. Reason %s.' % e)
-            return None
+            return ""
 
 #марка авто
 def get_car_mark(html):
-    if html is not None:
+    if html:
         try:
             if(len(html.find("#body > section.con_top.gray-bg_fin > div.container-fluid.wide_area.mt_1.car_view_check_area > div > div > div > table > tbody > tr:nth-child(7) > td:nth-child(2)"))):     
                 return ko_translate(rm_new_line(str(html.find("#body > section.con_top.gray-bg_fin > div.container-fluid.wide_area.mt_1.car_view_check_area > div > div > div > table > tbody > tr:nth-child(7) > td:nth-child(2)")[0].text)),"en")
         except Exception as e:
             print('Can\'t get car mark. Reason %s.' % e)
-            return None
+            return ""
 
 #VIN номер авто
 def get_car_vin(html):
-    if html is not None:
+    if html:
         try:
             if(len(html.find("#body > section.con_top.gray-bg_fin > div:nth-child(1) > div.row.mt_5 > div.col-md-4.car-details-sidebar > div > ul > li:nth-child(2) > strong"))):
                 return str(html.find("#body > section.con_top.gray-bg_fin > div:nth-child(1) > div.row.mt_5 > div.col-md-4.car-details-sidebar > div > ul > li:nth-child(2) > strong")[0].text)
@@ -547,7 +544,7 @@ def get_car_vin(html):
             print('Can\'t get VIN number. Reason %s.' % e)
 
 def get_car_category_url(html):
-    if html is not None:
+    if html:
         categoty_url_data = {
                 "Genesis":"genesis",
                 "Kia Motors":"kia-motors",
@@ -583,26 +580,26 @@ def get_car_category_url(html):
             if(get_car_category(html)):
                 return categoty_url_data[get_car_category(html)]
             else:
-                return None
+                return ""
         except Exception as e:
             print('Can\'t get car category url. Reason %s.' % e)
-            return None
+            return ""
 
 #цена автомобиля 
 def get_car_price(html):
-    if html is not None:
+    if html:
         try:
             if(len(html.find("strong.i_comm_main_txt2"))):
                 price = int(re.sub("\,", "", html.find("strong.i_comm_main_txt2")[0].text))
                 return int(price*10000/int(config['SELLCAR']['USD']))
         except Exception as e:
             print('Can\'t get car price. Reason %s.' % e)
-            return None
+            return ""
 
 #описание авто 
 def get_car_description(html, link):
-    description = None
-    if html is not None:
+    description = ""
+    if html:
         try:
             vr = re.search("[A-Z0-9]+$", link)
             if vr:
@@ -640,7 +637,7 @@ def get_car_description(html, link):
 
 #фото авто
 def get_img_src(html):
-    if html is not None:
+    if html:
         try:
             items = html.find("img.img-fluid")
             images = []
@@ -654,13 +651,13 @@ def get_img_src(html):
             return images
         except Exception as e:
             print('Can\'t get img src. Reason %s.' % e)
-            return None
+            return ""
 
 def get_img_str(imgs, html):
-    if html is not None:
+    if html:
         try:
             title = get_car_title(html)
-            img_str = None
+            img_str = ""
             for img in imgs :
                 # str_arr = str(img).split('/')
                 # str_arr.reverse()
@@ -669,7 +666,7 @@ def get_img_str(imgs, html):
             return img_str[:-1]
         except Exception as e:
             print('Can\'t get Images str. Reason %s' % e)
-            return None
+            return ""
 
 #записуємо усі данні у файл
 def write_csv(data, name = "data.csv"):
@@ -698,6 +695,7 @@ def create_csv(name = "data.csv"):
 
 #витягуємо всі данні на авто
 def get_car(link):
+    car = {}
     # p = current_process()
     # if(p.name != 'MainProcess' and p._identity[0] and os.getpid()):
     #     print('process counter:', p._identity[0], 'pid:', os.getpid())
@@ -705,8 +703,7 @@ def get_car(link):
     # time.sleep(unf)
     html = fetch(link)
     print(html)
-    if(html is not None):
-        car = {}
+    if html:
         year = get_car_year(html)
         category = get_car_category(html)
         # if(isinstance(year,int) and (year < 2012)):
@@ -720,7 +717,7 @@ def get_car(link):
         fuel = get_fuel(html)
         lot_number = get_lot_id(html)
         car_registration = get_car_registration(html)
-        mark = None if not category or not get_car_mark(html) else category +" "+get_car_mark(html).upper()
+        mark = "" if not category or not get_car_mark(html) else category +" "+get_car_mark(html).upper()
         car_vin = get_car_vin(html)
         car['category'] = category
         car['category_url'] = get_car_category_url(html)

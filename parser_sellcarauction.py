@@ -593,7 +593,7 @@ def get_missed_car_id(html):
             except Exception as e:
                 print('Can\'t get lot id. Reason %s.' % e)
             try:
-                car_name = clear_car_name(ko_translate(rm_new_line(str(re.sub("[0-9]+\s", "", item.parent.find("div", class_="car-title").find("a").text.strip()))), "en"))
+                car_name = clear_car_name(ko_translate(rm_new_line(str(re.sub("^\d+\s", "", item.parent.find("div", class_="car-title").find("a").text.strip()))), "en"))
             except Exception as e:
                 print('Can\'t get car name. Reason %s.' % e)
             res = car_name.split()
@@ -615,7 +615,7 @@ def get_missed_car_id(html):
                 elif(car_price != 0):
                     for row in result:
                         if (row[1] == 0):
-                            print("Car price:", car_price, "Car id:", row[0])
+                            print("Car price:", car_price, "Car id:", row[0], "Car Title:", row[2])
                             update_query = "UPDATE mg_product SET price = "+str(car_price)+" WHERE id = "+str(row[0])
                             cursor.execute(update_query)
                             db_connection.commit()

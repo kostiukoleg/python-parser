@@ -227,6 +227,7 @@ def get_max_page(html, pages=20):
         print('Can\'t get max page. Reason %s' % e)
 #витягуємо html із сесію
 def get_shtml(link):
+    data = ''
     try:
         session = login(config['LOTTE']['LOGIN_LINK'])
         if(isinstance(session, int)):
@@ -234,41 +235,46 @@ def get_shtml(link):
         else:
             html = session.get(link)
             if html.status_code == 200:
+                data = html.text
                 session.close()
-                return html.text
+                return data
             else: return html.status_code
     except Exception as e:
         print('Can\'t get HTML with session. Reason %s.' % e)
 #пробег
 def get_distance_driven(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    try:
-        res = re.findall("[0-9]+", str(soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(1) > td:nth-child(4)")).strip())
-        return int("".join(res))
-    except Exception as e:
-        print('Can\'t get driven distance. Reason %s.' % e)
-        return ""
+    if(html != ''):
+        soup = BeautifulSoup(html, 'html.parser')
+        try:
+            res = re.findall("[0-9]+", str(soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(1) > td:nth-child(4)")).strip())
+            if(len(res)):
+                return int("".join(res))
+        except Exception as e:
+            print('Can\'t get driven distance. Reason %s.' % e)
+            return ""
 #топливо
 def get_fuel(html):
-    fulel_data = {
-        "가솔린":"Бензин",
-        "휘발유":"Бензин",
-        "경유":"Бензин",
-        "디젤":"Дизель",
-        "LPG":"LPG",
-        "하이브리드":"Гибрид",
-        "LPI하이브리드":"LPG гибрид",
-        "가솔린하이브리드":"Бензиновый гибрид",
-        "디젤하이브리드": "Дизельный гибрид",
-        "전기":"Электрокар",
-        "가솔린/LPG":"Бензин/LPG"
-    }
-    soup = BeautifulSoup(html, 'html.parser')
-    try:
-        return fulel_data[str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(4) > td:nth-child(4)")[0].text.strip())]
-    except Exception as e:
-        print('Can\'t get fuel. Reason %s.' % e)
-        return ""
+    if(html != ''):
+        fulel_data = {
+            "가솔린":"Бензин",
+            "휘발유":"Бензин",
+            "경유":"Бензин",
+            "디젤":"Дизель",
+            "LPG":"LPG",
+            "하이브리드":"Гибрид",
+            "LPI하이브리드":"LPG гибрид",
+            "가솔린하이브리드":"Бензиновый гибрид",
+            "디젤하이브리드": "Дизельный гибрид",
+            "전기":"Электрокар",
+            "가솔린/LPG":"Бензин/LPG"
+        }
+        soup = BeautifulSoup(html, 'html.parser')
+        try:
+            if(len(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(4) > td:nth-child(4)"))):
+                return fulel_data[str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(4) > td:nth-child(4)")[0].text.strip())]
+        except Exception as e:
+            print('Can\'t get fuel. Reason %s.' % e)
+            return ""
 #марка авто
 def get_car_mark(html):
     soup = BeautifulSoup(html, 'html.parser')
@@ -283,21 +289,24 @@ def get_car_mark(html):
 def get_car_vin(html):
     soup = BeautifulSoup(html, 'html.parser')
     try:
-        return str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > div > div > table > tbody > tr:nth-child(7) > td")[0].text.strip())
+        if(len(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > div > div > table > tbody > tr:nth-child(7) > td"))):
+            return str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > div > div > table > tbody > tr:nth-child(7) > td")[0].text.strip())
     except Exception as e:
         print('Can\'t get car vin code. Reason %s.' % e)
         return ""
 #коробка передач
 def get_transmission(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    try:
-        if(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(2) > td:nth-child(4)")[0].text.strip() == "자동"):
-            return "Автомат"
-        else:
-            return "Механика"
-    except Exception as e:
-        print('Can\'t get transmission. Reason %s.' % e)
-        return ""
+    if(html != ''):
+        soup = BeautifulSoup(html, 'html.parser')
+        try:
+            if(len(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(2) > td:nth-child(4)"))):
+                if(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(2) > td:nth-child(4)")[0].text.strip() == "자동"):
+                    return "Автомат"
+                else:
+                    return "Механика"
+        except Exception as e:
+            print('Can\'t get transmission. Reason %s.' % e)
+            return ""
 #фото авто
 def get_img_src(html):
     soup = BeautifulSoup(html, 'html.parser')
@@ -327,38 +336,48 @@ def get_img_str(imgs, html):
         return ""
 #двигатель
 def get_car_displacement(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    try:
-        res = re.findall("[0-9]+", str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(5) > td:nth-child(4)")[0].text.strip()))
-        return int("".join(res))
-    except Exception as e:
-        print('Can\'t get car displacement. Reason %s.' % e)
-        return ""
+    if(html != ''):
+        soup = BeautifulSoup(html, 'html.parser')
+        try:
+            if(len(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(5) > td:nth-child(4)"))):
+                res = re.findall("[0-9]+", str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(5) > td:nth-child(4)")[0].text.strip()))
+                return int("".join(res))
+        except Exception as e:
+            print('Can\'t get car displacement. Reason %s.' % e)
+            return ""
 #лот аукциона
 def get_lot_id(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    try:
-        return ko_translate(rm_new_line(str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-tit > p > strong")[0].text.strip())), "en")
-    except Exception as e:
-        print('Can\'t get title. Reason %s.' % e)
-        return ""
+    if(html != ''):
+        soup = BeautifulSoup(html, 'html.parser')
+        try:
+            if(len(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-tit > p > strong"))):
+                return ko_translate(rm_new_line(str(soup.select("body > div.page-popup.exhibited-vehicle > div.vehicle-tit > p > strong")[0].text.strip())), "en")
+        except Exception as e:
+            print('Can\'t get lot id. Reason %s.' % e)
+            return ""
 #название авто
 def get_car_title(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    try:
-        title = ko_translate(rm_new_line(str(soup.find("h2", class_="tit").text.strip())), "en")
-        return get_lot_id(html) + " " + clear_car_name(title)
-    except Exception as e:
-        print('Can\'t get title. Reason %s.' % e)
-        return ""
+    if(html != '' and html is not None): 
+        try:
+            soup = BeautifulSoup(html, 'html.parser')
+            if(soup.find("h2", class_="tit").text.strip() is not None and isinstance(soup.find("h2", class_="tit").text.strip(), str)):
+                title = clear_car_name(ko_translate(rm_new_line(str(soup.find("h2", class_="tit").text.strip())), "en"))
+                lot_id = get_lot_id(html)
+                if(lot_id !='' and lot_id is not None):
+                    return lot_id + " " + title
+        except Exception as e:
+            print('Can\'t get title. Reason %s.' % e)
+            return ""
 #витягуємо оцінку авто
 def get_car_estimate(html):
-    soup = BeautifulSoup(html, 'html.parser')
-    try:
-        return ko_translate(rm_new_line(str(soup.select("body > div.page-popup.exhibited-vehicle > div.clfix > div.vehicle-info > ul > li:nth-child(4) > strong")[0].text.strip())), "en")
-    except Exception as e:
-        print('Can\'t get car estimate. Reason %s.' % e)
-        return ""
+    if(html != ''):
+        soup = BeautifulSoup(html, 'html.parser')
+        try:
+            if(len(soup.select("body > div.page-popup.exhibited-vehicle > div.clfix > div.vehicle-info > ul > li:nth-child(4) > strong"))):
+                return ko_translate(rm_new_line(str(soup.select("body > div.page-popup.exhibited-vehicle > div.clfix > div.vehicle-info > ul > li:nth-child(4) > strong")[0].text.strip())), "en")
+        except Exception as e:
+            print('Can\'t get car estimate. Reason %s.' % e)
+            return ""
 #год автомобиля
 def get_car_year(html):
     if(html != ''):
@@ -390,7 +409,8 @@ def get_car_color(html):
     }
     soup = BeautifulSoup(html, 'html.parser')
     try:
-        return color_data[re.sub("\s.+","", soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(3) > td:nth-child(4)")[0].text.strip())]
+        if(len(soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(3) > td:nth-child(4)"))):
+            return color_data[re.sub("\s.+","", soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(3) > td:nth-child(4)")[0].text.strip())]
     except Exception as e:
         print('Can\'t get car color. Reason %s.' % e)
         return ""
@@ -415,7 +435,8 @@ def get_car_type(html):
     }
     soup = BeautifulSoup(html, 'html.parser')
     try:
-        return car_type_data[soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(6) > td:nth-child(2)")[0].text.strip()]
+        if(len(soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(6) > td:nth-child(2)"))):
+            return car_type_data[soup.select("div.vehicle-detail > div > div.vehicle-detail > div > table > tbody > tr:nth-child(6) > td:nth-child(2)")[0].text.strip()]
     except Exception as e:
         print('Can\'t get car type. Reason %s.' % e)
         return ""
@@ -429,7 +450,8 @@ def write_car_id(file_name, data):
 def get_car_price(html):
     soup = BeautifulSoup(html, 'html.parser')
     try:
-        return int((float("".join(soup.select("body > div.page-popup.exhibited-vehicle > div.clfix > div.vehicle-info > p > strong > em")[0].text.strip().split(",")))*10000)/float(config['LOTTE']['USDCOURSE']))
+        if(len(soup.select("body > div.page-popup.exhibited-vehicle > div.clfix > div.vehicle-info > p > strong > em"))):
+            return int((float("".join(soup.select("body > div.page-popup.exhibited-vehicle > div.clfix > div.vehicle-info > p > strong > em")[0].text.strip().split(",")))*10000)/float(config['LOTTE']['USDCOURSE']))
     except Exception as e:
         print('Can\'t get car price. Reason %s.' % e)
         return ""
@@ -560,14 +582,22 @@ def get_missed_car_id(html):
     except Exception as e:
         print('Can\'t get car id. Reason %s.' % e)
 #парсимо сайт із сесії
-def parse(link, func):
+def parse(link, func=None):
+    data = ''
     login(config['LOTTE']['LOGIN_LINK'])
     try:
         html = session.get(link)
         if html.status_code == 200:
-            return func(html.text)
+            if func is not None:
+                data = func(html.text)
+                session.close()
+                return data
+            else:
+                data = html.text
+                session.close()
+                return data
         else:
-            print('Error code %d', html.status_code)
+            return ''
     except Exception as e:
         print('Can\'t get html from site. Reason %s.' % e)
 #парсимо всі ссилки на авто по сторінкам
@@ -680,13 +710,13 @@ def fetch(url):
     try:
         r.html.render(timeout=600)
         if(r.status_code == 200):
-            data = r.headers
+            data = r.html
+            asession.close()
+        else:
+            asession.close()
     except Exception as e:
         print('Failed to render page %s. Reason: %s' % (url, e))
-    try:
         asession.close()
-    except Exception as e:
-        print('Failed to close session %s. Reason: %s' % (url, e))
     return data
 #krw_to_usd = get_currency()
 #витягуємо всі данні на авто
@@ -694,12 +724,10 @@ def get_car(link):
     # p = current_process()
     # if(p.name != 'MainProcess'):
     #     print('process counter:', p._identity[0], 'pid:', os.getpid())
-    time.sleep(uniform(1,6))
-    html = get_shtml(link)
+    #time.sleep(uniform(1,6))
+    html = parse(link)
     try:
-        if(isinstance(html, int)):
-            print(html)
-        else:
+        if(html != '' and html is not None):
             car = {}
             year = 0 if not isinstance(get_car_year(html), int) else get_car_year(html)
             # if(year < 2012):
@@ -789,7 +817,7 @@ def main():
         # clear_folder('./py_img2/')
         my_list = get_all_links(config['LOTTE']['CAR_LINK'])
         # get_car(my_list[0])
-        with Pool(1) as p:
+        with Pool(8) as p:
             p.map(get_car, my_list) 
         if(config['LOTTE']['FTPCODE'] == '1'):
             ftp.quit()
